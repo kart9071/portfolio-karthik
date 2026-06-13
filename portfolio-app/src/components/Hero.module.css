@@ -1,0 +1,76 @@
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 64px 2rem 0;
+  position: relative; overflow: hidden;
+}
+
+.glow {
+  position: absolute; width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; max-width: 780px;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.4);
+  color: #a78bfa; padding: 0.4rem 1rem; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 500; margin-bottom: 1.5rem;
+}
+.dot {
+  width: 6px; height: 6px; background: #7c3aed; border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)}
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 800; line-height: 1.1; margin-bottom: 1rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+}
+
+.role {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.desc {
+  color: var(--muted); font-size: 1.1rem; max-width: 600px; margin-bottom: 2rem;
+}
+
+.cta { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+.btnPrimary {
+  background: linear-gradient(135deg, var(--accent), #6d28d9);
+  color: #fff; padding: 0.75rem 1.75rem; border-radius: 8px;
+  text-decoration: none; font-weight: 600; font-size: 0.95rem;
+  box-shadow: 0 0 20px rgba(124,58,237,0.4);
+  transition: all 0.2s;
+}
+.btnPrimary:hover { transform: translateY(-2px); box-shadow: 0 4px 30px rgba(124,58,237,0.6); }
+
+.btnOutline {
+  background: transparent; color: var(--text);
+  padding: 0.75rem 1.75rem; border-radius: 8px;
+  text-decoration: none; font-weight: 600; font-size: 0.95rem;
+  border: 1px solid var(--border); transition: all 0.2s;
+}
+.btnOutline:hover { border-color: var(--accent); color: #a78bfa; }
+
+.stats {
+  display: flex; gap: 3rem; justify-content: center;
+  margin-top: 3rem; flex-wrap: wrap;
+}
+.stat { text-align: center; }
+.statNum { font-size: 2rem; font-weight: 800; color: var(--accent2); }
+.statLabel { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
