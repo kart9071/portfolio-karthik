@@ -91,8 +91,11 @@ jobs:
       - name: Build
         working-directory: portfolio-app
         env:
-          # Falls back to portfolio-app/.env.production when the repo variable is unset.
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          # An unset repo variable expands to an EMPTY string, and Vite lets
+          # process.env override .env.production - which makes Contact.jsx fall
+          # back to http://localhost:8000. That is the bug that reached
+          # production. Always pass a real value.
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api.karthikshetty.co.in' }}
         run: npm run build
 
       - name: Verify the bundle points at the production API
@@ -304,7 +307,7 @@ jobs:
             portfolio-backend/ "$SSH_USER@$SSH_HOST:$BACKEND_DIR/"
 
           ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" \
-            "set -e; '$VENV_DIR/bin/pip' install --quiet --upgrade -r '$BACKEND_DIR/requirements.txt'; sudo systemctl restart '$SERVICE_NAME'; sudo systemctl is-active --quiet '$SERVICE_NAME'"
+            "set -e; '$VENV_DIR/bin/pip' install --quiet --upgrade -r '$BACKEND_DIR/requirements.txt'; sudo systemctl restart '$SERVICE_NAME'; sudo systemctl is-active '$SERVICE_NAME'"
 
       - name: Verify the API is healthy
         run: |
