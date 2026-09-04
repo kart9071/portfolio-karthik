@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local data / scratch
+*.xlsx
+*.png
+!portfolio-app/**/*.png
+test-mysql-encryption/
+
+# Claude Code local config (machine-specific paths)
+.claude/

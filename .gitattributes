@@ -1,0 +1,7 @@
+# Anything the Linux runner or the server executes must stay LF.
+# CRLF in a workflow's `run:` block fails with $'\r': command not found.
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+*.py    text eol=lf
+.env*   text eol=lf

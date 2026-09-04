@@ -1,12 +1,28 @@
+import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"])
 
-DB = "contacts.db"
+# Origins allowed to call this API. Override on the server with
+# ALLOWED_ORIGINS="https://a.example,https://b.example" if the domain changes.
+DEFAULT_ORIGINS = [
+    "https://karthikshetty.co.in",
+    "https://www.karthikshetty.co.in",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+]
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get("ALLOWED_ORIGINS", ",".join(DEFAULT_ORIGINS)).split(",") if o.strip()
+]
+CORS(app, origins=ALLOWED_ORIGINS)
+
+# Absolute so the DB is found no matter what CWD the service starts in.
+DB = os.environ.get("CONTACTS_DB", os.path.join(os.path.dirname(os.path.abspath(__file__)), "contacts.db"))
 
 
 def get_db():
@@ -70,7 +86,10 @@ def health():
     return jsonify({"status": "ok"})
 
 
+# Run at import time so the table exists under gunicorn too, not just `python app.py`.
+init_db()
+
+
 if __name__ == "__main__":
-    init_db()
     print("Flask backend running -> http://localhost:8000")
     app.run(host="0.0.0.0", port=8000, debug=True)
