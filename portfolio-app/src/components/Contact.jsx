@@ -54,7 +54,7 @@ export default function Contact() {
         <div className={styles.info}>
           <h3>Let&apos;s build something together</h3>
           <p>
-            Whether you need a website and, an AI agent, cloud infrastructure, or want to leverage
+            Whether you need a website, an AI agent, cloud infrastructure, or want to leverage
             Claude Code for your dev team — I&apos;m available for freelance and consulting work.
           </p>
           <div className={styles.links}>
