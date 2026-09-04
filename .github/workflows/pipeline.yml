@@ -213,6 +213,13 @@ jobs:
             exit 1
           fi
 
+          # rsync must exist on BOTH ends. Without this, a missing server-side
+          # rsync surfaces only as "connection unexpectedly closed / code 12".
+          if ! ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "command -v rsync >/dev/null 2>&1"; then
+            echo "::error::rsync is not installed on the server. Run: sudo apt update && sudo apt install -y rsync"
+            exit 1
+          fi
+
           rsync -az --delete --checksum \
             -e "ssh -i ~/.ssh/id_deploy" \
             dist/ "$SSH_USER@$SSH_HOST:$FRONTEND_ROOT/"
@@ -276,6 +283,11 @@ jobs:
 
           if ! ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "test -d '$BACKEND_DIR' && test -x '$VENV_DIR/bin/python'"; then
             echo "::error::BACKEND_DIR or VENV_DIR does not match the server layout."
+            exit 1
+          fi
+
+          if ! ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "command -v rsync >/dev/null 2>&1"; then
+            echo "::error::rsync is not installed on the server. Run: sudo apt update && sudo apt install -y rsync"
             exit 1
           fi
 
