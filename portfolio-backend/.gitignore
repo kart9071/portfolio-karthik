@@ -1,0 +1,4 @@
+# Production database lives on the server only — never ship it from CI
+contacts.db
+*.db-journal
+*.sqlite3
