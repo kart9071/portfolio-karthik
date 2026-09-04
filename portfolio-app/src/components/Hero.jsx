@@ -16,7 +16,7 @@ export default function Hero() {
           <span className={styles.dot} /> Available for freelance &amp; consulting
         </div>
         <h1>
-          <span className={styles.role}>Developer &amp; AI Engineer</span>
+          <span className={styles.role}>Software Developer &amp; AI Engineer</span>
         </h1>
         <p className={styles.desc}>
           Building scalable web products, AI-powered systems, and cloud infrastructure.
