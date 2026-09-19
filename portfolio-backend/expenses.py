@@ -23,7 +23,11 @@ class UpstreamError(RuntimeError):
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.environ.get("EXPENSES_DB", os.path.join(HERE, "expenses.db"))
 XLSX = os.environ.get("EXPENSES_XLSX", os.path.join(HERE, "Expenses.xlsx"))
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# flash-lite handles this extraction as accurately as the full models at a
+# fraction of the latency and cost. The unversioned alias is deliberate:
+# gemini-2.5-flash was retired for new API keys and broke this endpoint, so
+# track the current lite model rather than pin one. Set GEMINI_MODEL to pin.
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 
 # Same controlled vocabularies as expense-tracker/config.json, so rows written
 # here stay compatible with the sheet the desktop tool already maintains.
@@ -102,6 +106,9 @@ def _system_instruction():
         f"Yesterday was {(today - timedelta(days=1)).isoformat()}. "
         "Resolve relative dates against those, and assume the current year when "
         "a date gives only day and month. Never return a future date.\n"
+        "When one note lists several expenses and only some carry a date, the "
+        "undated ones take the last date mentioned before them, or today when "
+        "the note gives no date at all.\n"
         "'I', 'me' or an unattributed expense means Person='Me'. Mentions of "
         "mother/mom/amma mean Person='Mom'.\n"
         "Amounts are Indian rupees; return the number only, no symbol.\n"
