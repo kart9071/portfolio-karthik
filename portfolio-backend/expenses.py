@@ -15,6 +15,11 @@ from flask import Blueprint, jsonify, request, send_file
 
 bp = Blueprint("expenses", __name__)
 
+
+class UpstreamError(RuntimeError):
+    """The Gemini call itself failed - quota, billing, auth or network."""
+
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.environ.get("EXPENSES_DB", os.path.join(HERE, "expenses.db"))
 XLSX = os.environ.get("EXPENSES_XLSX", os.path.join(HERE, "Expenses.xlsx"))
@@ -119,16 +124,21 @@ def parse_expenses(prompt):
         raise RuntimeError("GEMINI_API_KEY is not set on this host")
 
     client = genai.Client(api_key=api_key)
-    resp = client.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=_system_instruction(),
-            response_mime_type="application/json",
-            response_schema=RESPONSE_SCHEMA,
-            temperature=0,
-        ),
-    )
+    try:
+        resp = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=_system_instruction(),
+                response_mime_type="application/json",
+                response_schema=RESPONSE_SCHEMA,
+                temperature=0,
+            ),
+        )
+    except Exception as e:
+        # Quota, billing and auth failures are not the prompt's fault - keep
+        # them distinguishable so the caller is not sent to debug their wording.
+        raise UpstreamError(str(e))
 
     payload = json.loads(resp.text)
     return payload.get("expenses") or []
@@ -244,10 +254,12 @@ def add_expense():
 
     try:
         raw_rows = parse_expenses(prompt)
+    except UpstreamError as e:
+        return jsonify({"error": "Gemini rejected the request", "detail": str(e)}), 502
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 503
     except Exception as e:
-        return jsonify({"error": f"could not parse the prompt: {e}"}), 502
+        return jsonify({"error": f"could not read the model's reply: {e}"}), 502
 
     if not raw_rows:
         return jsonify({"error": "no expense found in that prompt", "prompt": prompt}), 422
