@@ -4,6 +4,8 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+from expenses import bp as expenses_bp
+
 app = Flask(__name__)
 
 # Origins allowed to call this API. Override on the server with
@@ -85,6 +87,8 @@ def list_contacts():
 def health():
     return jsonify({"status": "ok"})
 
+
+app.register_blueprint(expenses_bp)
 
 # Run at import time so the table exists under gunicorn too, not just `python app.py`.
 init_db()
