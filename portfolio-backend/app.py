@@ -4,7 +4,13 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from expenses import bp as expenses_bp
+# Load .env before anything reads os.environ. `python app.py` does not do this
+# on its own - only `flask run` would - and expenses.py resolves its file paths
+# at import time, so this has to happen before that import.
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+from expenses import bp as expenses_bp  # noqa: E402
 
 app = Flask(__name__)
 
