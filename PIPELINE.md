@@ -12,7 +12,8 @@ Workflow file: [.github/workflows/pipeline.yml](.github/workflows/pipeline.yml)
 |---|---|
 | GCP project | `gen-lang-client-0852212439` |
 | Instance | `instance-20260613-180804`, zone `us-west1-b` |
-| External IP | `136.118.61.122` (matches DNS for both domains) |
+| External IP | `35.252.100.23` - **reserved** as `portfolio-ip`, was ephemeral |
+| Registrar / DNS | GoDaddy (nameservers `ns31/ns32.domaincontrol.com`) |
 | Nginx web root | `/home/karthikakala13/portfolio/portfolio-karthik/portfolio-app/dist` |
 | systemd unit | `portfolio.service` (**not** `portfolio-backend`) |
 | Backend dir | `/home/karthikakala13/portfolio/portfolio-karthik/portfolio-backend` |
@@ -83,6 +84,21 @@ There is no way to verify the key from the laptop under the outbound-22 block. T
 first pipeline run is the verification — if the key is wrong, `deploy-frontend` fails
 at the rsync step with `Permission denied (publickey)`.
 
+**This file does not survive a restart.** GCP's guest agent regenerates
+`~/.ssh/authorized_keys` from instance metadata, and on 2026-09-20 it deleted the
+file outright, taking the hand-added deploy key with it. Deploys then failed with
+`Permission denied (publickey)` even though nothing in the repo or secrets had
+changed.
+
+The durable fix is to let GCP install the key itself: Console → VM instances →
+`instance-20260613-180804` → Edit → SSH Keys → Add item, pasting the public key with
+its trailing comment changed to `karthikakala13`. GCP derives the login name from
+that comment, so leaving it as `github-actions-portfolio` creates the wrong user and
+the deploy still fails.
+
+Prefer the Console over `gcloud compute instances add-metadata`, which replaces the
+whole `ssh-keys` value and can lock out browser-console access if it is got wrong.
+
 ### 3. Let the deploy user restart the service without a password
 
 The backend job runs `sudo systemctl restart portfolio`. Without this rule it blocks
@@ -141,7 +157,7 @@ residential ISPs do, including this one) will silently return nothing. Read the 
 off the VM instead:
 
 ```bash
-for f in /etc/ssh/ssh_host_*_key.pub; do echo "136.118.61.122 $(cut -d' ' -f1,2 "$f")"; done
+for f in /etc/ssh/ssh_host_*_key.pub; do echo "35.252.100.23 $(cut -d' ' -f1,2 "$f")"; done
 ```
 
 That output is already in `known_hosts` format — paste it into the `SSH_KNOWN_HOSTS`
@@ -156,7 +172,7 @@ another host.
 |---|---|
 | `SSH_PRIVATE_KEY` | Full contents of `C:\Users\karth\.ssh\portfolio_deploy`, BEGIN/END lines included |
 | `SSH_KNOWN_HOSTS` | Three lines from the step 5 command |
-| `SSH_HOST` | `136.118.61.122` |
+| `SSH_HOST` | `35.252.100.23` |
 | `SSH_USER` | `karthikakala13` |
 
 Copy the private key to the clipboard without printing it to a terminal — in cmd.exe:
