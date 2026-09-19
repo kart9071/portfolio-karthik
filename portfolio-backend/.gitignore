@@ -1,4 +1,7 @@
-# Production database lives on the server only — never ship it from CI
-contacts.db
+# Live data and secrets live on the server only - never ship them from CI.
+# The deploy rsync excludes these same patterns so --delete cannot remove them.
+*.db
 *.db-journal
 *.sqlite3
+*.xlsx
+.env

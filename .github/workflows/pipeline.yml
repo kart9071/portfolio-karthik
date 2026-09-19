@@ -300,8 +300,10 @@ jobs:
           rsync -az --delete \
             --exclude 'venv/' \
             --exclude '.venv/' \
-            --exclude 'contacts.db' \
+            --exclude '.env' \
+            --exclude '*.db' \
             --exclude '*.db-journal' \
+            --exclude '*.xlsx' \
             --exclude '__pycache__/' \
             -e "ssh -i ~/.ssh/id_deploy" \
             portfolio-backend/ "$SSH_USER@$SSH_HOST:$BACKEND_DIR/"
