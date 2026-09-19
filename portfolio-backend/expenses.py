@@ -119,9 +119,11 @@ def parse_expenses(prompt):
     from google import genai
     from google.genai import types
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    # The Google SDK honours either name, so accept both rather than making a
+    # host that already has GOOGLE_API_KEY set define a second variable.
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is not set on this host")
+        raise RuntimeError("Set GEMINI_API_KEY (or GOOGLE_API_KEY) on this host")
 
     client = genai.Client(api_key=api_key)
     try:
