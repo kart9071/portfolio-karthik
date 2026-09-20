@@ -6,6 +6,7 @@ in SQLite and in the Expenses sheet of an .xlsx laid out exactly like the one
 the desktop expense tracker writes.
 """
 
+import hmac
 import json
 import os
 import sqlite3
@@ -44,6 +45,27 @@ PAYMENT_MODES = ["Cash", "UPI", "Card", "Bank Transfer", "Other"]
 # these positionally.
 HEADERS = ["Date", "Person", "Category", "Item / Details", "Amount",
            "Payment Mode", "Notes", "Entered On"]
+
+
+@bp.before_request
+def require_token():
+    """Gate every expense route behind a shared secret.
+
+    These endpoints expose personal finances on a public domain, so this fails
+    closed: with no EXPENSE_TOKEN configured nothing is served at all, rather
+    than defaulting to open.
+    """
+    if request.method == "OPTIONS":
+        return None  # let the CORS preflight through untouched
+
+    expected = os.environ.get("EXPENSE_TOKEN")
+    if not expected:
+        return jsonify({"error": "EXPENSE_TOKEN is not configured on the server"}), 503
+
+    # compare_digest rather than == so a wrong token cannot be guessed a
+    # character at a time by timing the response.
+    if not hmac.compare_digest(request.headers.get("X-Expense-Token", ""), expected):
+        return jsonify({"error": "unauthorized"}), 401
 
 
 def get_db():
