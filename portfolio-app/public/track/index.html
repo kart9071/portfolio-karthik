@@ -21,20 +21,20 @@
     padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom));
     max-width:620px;margin:0 auto;
   }
-  header{display:flex;align-items:baseline;justify-content:space-between;padding:22px 0 14px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:22px 0 14px}
   h1{font-size:20px;margin:0;letter-spacing:-.01em}
+  .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
   .muted{color:var(--dim);font-size:13px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
-  textarea{
-    width:100%;min-height:96px;resize:vertical;padding:13px;
-    background:#0f131a;color:var(--text);border:1px solid var(--line);
-    border-radius:10px;font:inherit;
-  }
-  textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
-  input[type=password],input[type=text]{
+  textarea,input{
     width:100%;padding:13px;background:#0f131a;color:var(--text);
     border:1px solid var(--line);border-radius:10px;font:inherit;
   }
+  textarea{min-height:96px;resize:vertical}
+  input[type=date]{color-scheme:dark}
+  textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  label{display:block;font-size:12px;color:var(--dim);margin:0 0 5px 2px}
+  .field{margin-bottom:11px}
   .row{display:flex;gap:10px;margin-top:12px}
   button{
     flex:1;padding:14px;border:0;border-radius:10px;font:600 15px/1 inherit;
@@ -43,6 +43,7 @@
   button.ghost{background:#222835;color:var(--text);border:1px solid var(--line)}
   button:disabled{opacity:.5;cursor:default}
   button:active{transform:translateY(1px)}
+  .link{background:none;border:0;color:var(--dim);font-size:12px;text-decoration:underline;padding:4px 6px;min-height:0;flex:0 0 auto;width:auto}
   .msg{margin-top:12px;padding:11px 13px;border-radius:10px;font-size:14px;display:none;white-space:pre-wrap;word-break:break-word}
   .msg.show{display:block}
   .msg.ok{background:rgba(63,185,80,.12);color:var(--ok);border:1px solid rgba(63,185,80,.3)}
@@ -51,7 +52,7 @@
   .tot{flex:1;background:#0f131a;border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
   .tot .v{font-size:19px;font-weight:700;letter-spacing:-.02em}
   .tot .k{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
-  .item{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .item{display:flex;gap:9px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
   .item:first-child{border-top:0}
   .pill{font-size:10px;font-weight:700;padding:3px 7px;border-radius:999px;flex-shrink:0}
   .pill.Me{background:rgba(79,140,255,.16);color:var(--me)}
@@ -60,18 +61,19 @@
   .item .t{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .item .s{font-size:12px;color:var(--dim)}
   .item .amt{font-weight:700;font-variant-numeric:tabular-nums}
+  .del{flex:0 0 auto;width:30px;min-height:30px;height:30px;padding:0;border-radius:8px;
+       background:none;border:1px solid var(--line);color:var(--dim);font-size:16px;line-height:1}
+  .del:hover{border-color:var(--err);color:var(--err)}
   .bars{margin-top:4px}
   .bar{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px;padding:7px 0}
   .bar .track{grid-column:1/-1;height:5px;background:#0f131a;border-radius:3px;overflow:hidden}
   .bar .fill{height:100%;background:var(--accent);border-radius:3px}
-  .seg{display:flex;gap:6px;margin-bottom:12px}
+  .seg{display:flex;gap:6px;margin-bottom:11px}
   .seg button{flex:1;padding:9px;font-size:13px;background:#0f131a;border:1px solid var(--line);color:var(--dim);min-height:0}
   .seg button[aria-pressed=true]{background:#222835;color:var(--text);border-color:var(--accent)}
   .hide{display:none}
   .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:7px}
   @keyframes s{to{transform:rotate(360deg)}}
-  footer{text-align:center;padding:10px 0 0}
-  footer button{background:none;border:0;color:var(--dim);font-size:12px;text-decoration:underline;padding:6px;min-height:0}
 </style>
 </head>
 <body>
@@ -79,9 +81,15 @@
 <div id="gate" class="hide">
   <header><h1>Spend</h1></header>
   <div class="card">
-    <p class="muted" style="margin:0 0 12px">Enter the access token to continue. It stays on this device.</p>
-    <input type="password" id="tok" placeholder="Access token" autocomplete="current-password" enterkeyhint="go">
-    <div class="row"><button id="unlock">Unlock</button></div>
+    <div class="field">
+      <label for="u">Username</label>
+      <input id="u" autocomplete="username" autocapitalize="none" spellcheck="false" enterkeyhint="next">
+    </div>
+    <div class="field">
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="current-password" enterkeyhint="go">
+    </div>
+    <div class="row"><button id="signin">Sign in</button></div>
     <div class="msg err" id="gateMsg"></div>
   </div>
 </div>
@@ -89,7 +97,7 @@
 <div id="app" class="hide">
   <header>
     <h1>Spend</h1>
-    <span class="muted" id="today"></span>
+    <span class="who"><span id="whoName"></span><button class="link" id="signout">Sign out</button></span>
   </header>
 
   <div class="card">
@@ -101,10 +109,14 @@
     <div class="msg" id="msg"></div>
   </div>
 
-  <div class="card" id="summary">
+  <div class="card">
     <div class="seg">
       <button data-range="month" aria-pressed="true">This month</button>
       <button data-range="all" aria-pressed="false">All time</button>
+      <button data-range="day" aria-pressed="false">By date</button>
+    </div>
+    <div class="field hide" id="dateWrap">
+      <input type="date" id="onDate">
     </div>
     <div class="totals">
       <div class="tot"><div class="v" id="tTotal">—</div><div class="k">Total</div></div>
@@ -115,42 +127,42 @@
   </div>
 
   <div class="card">
-    <div class="muted" style="margin-bottom:6px">Recent</div>
+    <div class="muted" style="margin-bottom:6px" id="listTitle">Recent</div>
     <div id="list"><div class="muted" style="padding:8px 0">Nothing yet.</div></div>
   </div>
-
-  <footer><button id="forget">Forget token on this device</button></footer>
 </div>
 
 <script>
 (function(){
   "use strict";
-  // Same-origin in production (nginx proxies /api); localhost falls back to the
-  // dev server's port so this page works unchanged in both places.
   var API = location.hostname === "localhost" || location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:8000"
     : "https://api.karthikshetty.co.in";
 
-  var KEY = "spend.token";
+  var KEY = "spend.session";
   var $ = function(id){ return document.getElementById(id); };
-  var token = "";
+  var session = null;
   var range = "month";
 
-  try { token = localStorage.getItem(KEY) || ""; } catch (e) { token = ""; }
+  try { session = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { session = null; }
 
   function inr(n){
     return "₹" + Number(n || 0).toLocaleString("en-IN", {maximumFractionDigits: 0});
   }
-
-  function say(el, text, kind){
-    el.textContent = text;
-    el.className = "msg show " + (kind || "");
-  }
+  function say(el, text, kind){ el.textContent = text; el.className = "msg show " + (kind || ""); }
   function clear(el){ el.className = "msg"; }
+  function esc(s){
+    return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
 
   function api(path, opts){
     opts = opts || {};
-    opts.headers = Object.assign({"X-Expense-Token": token}, opts.headers || {});
+    opts.headers = Object.assign(
+      session ? {"Authorization": "Bearer " + session.token} : {},
+      opts.headers || {}
+    );
     return fetch(API + path, opts).then(function(r){
       return r.json().catch(function(){ return {}; }).then(function(body){
         if (!r.ok) {
@@ -168,31 +180,57 @@
     $("app").className  = which === "app"  ? "" : "hide";
   }
 
-  // ---- gate
-  function unlock(){
-    var v = $("tok").value.trim();
-    if (!v) return;
-    token = v;
-    $("unlock").disabled = true;
-    api("/api/expenses").then(function(){
-      try { localStorage.setItem(KEY, token); } catch (e) {}
-      show("app");
-      clear($("gateMsg"));
-      load();
-    }).catch(function(err){
-      token = "";
-      say($("gateMsg"), err.status === 401 ? "That token was not accepted." : err.message, "err");
-    }).finally(function(){ $("unlock").disabled = false; });
-  }
-  $("unlock").addEventListener("click", unlock);
-  $("tok").addEventListener("keydown", function(e){ if (e.key === "Enter") unlock(); });
-
-  $("forget").addEventListener("click", function(){
+  function signOut(){
     try { localStorage.removeItem(KEY); } catch (e) {}
-    token = "";
-    $("tok").value = "";
+    session = null;
+    $("p").value = "";
     show("gate");
-  });
+  }
+
+  // ---- sign in
+  function signIn(){
+    var username = $("u").value.trim();
+    var password = $("p").value;
+    if (!username || !password) { say($("gateMsg"), "Enter both fields.", "err"); return; }
+
+    $("signin").disabled = true;
+    $("signin").innerHTML = '<span class="spin"></span>Signing in…';
+
+    fetch(API + "/api/auth/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: username, password: password})
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(b){
+        if (!r.ok) throw new Error(b.error || ("HTTP " + r.status));
+        return b;
+      });
+    }).then(function(d){
+      session = {token: d.token, user: d.user};
+      try { localStorage.setItem(KEY, JSON.stringify(session)); } catch (e) {}
+      $("p").value = "";
+      clear($("gateMsg"));
+      start();
+    }).catch(function(err){
+      say($("gateMsg"), err.message, "err");
+    }).finally(function(){
+      $("signin").disabled = false;
+      $("signin").textContent = "Sign in";
+    });
+  }
+  $("signin").addEventListener("click", signIn);
+  $("u").addEventListener("keydown", function(e){ if (e.key === "Enter") $("p").focus(); });
+  $("p").addEventListener("keydown", function(e){ if (e.key === "Enter") signIn(); });
+  $("signout").addEventListener("click", signOut);
+
+  function start(){
+    $("whoName").textContent = session.user.display;
+    $("prompt").placeholder = session.user.person === "Mom"
+      ? "bought milk for 60 in cash today"
+      : "spent 250 on rice and dal by UPI yesterday, mom paid 1200 for the electricity bill";
+    show("app");
+    load();
+  }
 
   // ---- add
   function add(){
@@ -211,16 +249,12 @@
       var lines = d.expenses.map(function(e){
         return e.person + " · " + e.category + " · " + inr(e.amount) + " · " + e.spent_on;
       });
-      say($("msg"), "Added " + d.count + " — " + inr(d.total_added) + "\n" + lines.join("\n"), "ok");
+      var note = "Added " + d.count + " — " + inr(d.total_added) + "\n" + lines.join("\n");
+      if (d.xlsx_updated === false) note += "\n(sheet not updated: " + (d.xlsx_error || "unknown") + ")";
+      say($("msg"), note, "ok");
       $("prompt").value = "";
-      if (d.xlsx_updated === false) {
-        say($("msg"), $("msg").textContent + "\n(sheet not updated: " + (d.xlsx_error || "unknown") + ")", "ok");
-      }
       load();
-    }).catch(function(err){
-      if (err.status === 401) { show("gate"); return; }
-      say($("msg"), err.message, "err");
-    }).finally(function(){
+    }).catch(handle).finally(function(){
       $("add").disabled = false;
       $("add").textContent = "Add expense";
     });
@@ -230,13 +264,35 @@
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) add();
   });
 
+  function handle(err){
+    if (err.status === 401) { signOut(); return; }
+    say($("msg"), err.message, "err");
+  }
+
+  // ---- delete
+  window.__del = function(id, label){
+    if (!confirm("Delete " + label + "?")) return;
+    api("/api/expenses/" + id, {method: "DELETE"}).then(function(d){
+      say($("msg"), "Deleted " + (d.deleted.item || d.deleted.category) + " — " + inr(d.deleted.amount), "ok");
+      load();
+    }).catch(handle);
+  };
+
   // ---- totals
   function load(){
     var q = "";
     if (range === "month") {
       var d = new Date();
       q = "?month=" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      $("listTitle").textContent = "This month";
+    } else if (range === "day") {
+      if (!$("onDate").value) return;
+      q = "?date=" + $("onDate").value;
+      $("listTitle").textContent = "On " + $("onDate").value;
+    } else {
+      $("listTitle").textContent = "All time";
     }
+
     $("refresh").disabled = true;
     api("/api/expenses" + q).then(function(d){
       $("tTotal").textContent = inr(d.total);
@@ -244,12 +300,10 @@
       $("tMom").textContent   = inr(d.by_person.Mom);
       renderBars(d.by_category, d.total);
       renderList(d.expenses);
-    }).catch(function(err){
-      if (err.status === 401) { show("gate"); return; }
-      say($("msg"), err.message, "err");
-    }).finally(function(){ $("refresh").disabled = false; });
+    }).catch(handle).finally(function(){ $("refresh").disabled = false; });
   }
   $("refresh").addEventListener("click", load);
+  $("onDate").addEventListener("change", load);
 
   Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function(b){
     b.addEventListener("click", function(){
@@ -257,6 +311,10 @@
       Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function(o){
         o.setAttribute("aria-pressed", String(o === b));
       });
+      $("dateWrap").className = range === "day" ? "field" : "field hide";
+      if (range === "day" && !$("onDate").value) {
+        $("onDate").value = new Date().toISOString().slice(0, 10);
+      }
       load();
     });
   });
@@ -274,32 +332,29 @@
 
   function renderList(rows){
     if (!rows || !rows.length) {
-      $("list").innerHTML = '<div class="muted" style="padding:8px 0">Nothing yet.</div>';
+      $("list").innerHTML = '<div class="muted" style="padding:8px 0">Nothing here.</div>';
       return;
     }
-    $("list").innerHTML = rows.slice(0, 12).map(function(r){
-      var sub = r.spent_on + " · " + r.payment_mode;
+    $("list").innerHTML = rows.slice(0, 50).map(function(r){
+      var label = (r.item || r.category) + " " + inr(r.amount);
       return '<div class="item">' +
         '<span class="pill ' + (r.person === "Mom" ? "Mom" : "Me") + '">' + esc(r.person) + '</span>' +
         '<div class="body"><div class="t">' + esc(r.item || r.category) + '</div>' +
-        '<div class="s">' + esc(sub) + '</div></div>' +
-        '<div class="amt">' + inr(r.amount) + '</div></div>';
+        '<div class="s">' + esc(r.spent_on + " · " + r.payment_mode) + '</div></div>' +
+        '<div class="amt">' + inr(r.amount) + '</div>' +
+        '<button class="del" title="Delete" onclick="__del(' + r.id + ',\'' +
+          esc(label).replace(/'/g, "&#39;") + '\')">×</button>' +
+        '</div>';
     }).join("");
   }
 
-  function esc(s){
-    return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function(c){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
-    });
-  }
-
-  $("today").textContent = new Date().toLocaleDateString("en-IN", {day:"numeric", month:"short"});
-
-  // A stored token still has to be accepted by the server - it may have been
-  // rotated since this device last used it.
-  if (token) {
-    api("/api/expenses").then(function(){ show("app"); load(); })
-                        .catch(function(){ show("gate"); });
+  // A stored session still has to be accepted - the password may have changed
+  // or the token may have expired since this device last used it.
+  if (session && session.token) {
+    api("/api/auth/me").then(function(d){
+      session.user = d.user;
+      start();
+    }).catch(function(){ signOut(); });
   } else {
     show("gate");
   }
