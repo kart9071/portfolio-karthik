@@ -27,7 +27,7 @@ TOKEN_MAX_AGE = 60 * 60 * 24 * 30
 # username -> (Person the expenses are filed under, display name, env var holding the password)
 USERS = {
     "karthik": ("Me", "Karthik", "KARTHIK_PASSWORD"),
-    "mom": ("Mom", "kala", "MOM_PASSWORD"),
+    "kala": ("Mom", "Kalavathi NS", "MOM_PASSWORD"),
 }
 
 
