@@ -1,8 +1,12 @@
 # Portfolio Deployment
 
 ## Hosting
+
+> DNS is managed at **GoDaddy**. The VM's IP is reserved as `portfolio-ip`;
+> it was ephemeral until 2026-09-20 and changed on a restart, taking the site
+> down until the A records were repointed.
 - **Domain:** karthikshetty.co.in
-- **Server:** GCP VM — `136.118.61.122`
+- **Server:** GCP VM — `35.252.100.23`
 - **Frontend:** React (Vite) → served via Nginx
 - **Backend:** Flask → `api.karthikshetty.co.in` → `localhost:8000`
 
@@ -11,9 +15,9 @@
 ## DNS Records (set in your registrar)
 | Type | Name | Value |
 |------|------|-------|
-| A | `@` | `136.118.61.122` |
-| A | `www` | `136.118.61.122` |
-| A | `api` | `136.118.61.122` |
+| A | `@` | `35.252.100.23` |
+| A | `www` | `35.252.100.23` |
+| A | `api` | `35.252.100.23` |
 
 ---
 

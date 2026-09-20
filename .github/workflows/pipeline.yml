@@ -210,6 +210,14 @@ jobs:
               ;;
           esac
 
+          # Check reachability first. Otherwise a connection failure exits
+          # non-zero and gets reported below as a missing directory, which sends
+          # you debugging the wrong thing entirely.
+          if ! ssh -o ConnectTimeout=15 -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true; then
+            echo "::error::Cannot reach the server over SSH. If the VM was restarted its external IP may have changed - check the instance's current IP and update the SSH_HOST secret and SSH_KNOWN_HOSTS (known_hosts entries are keyed by address)."
+            exit 1
+          fi
+
           # Must already exist - refuse to invent a web root nginx is not serving.
           if ! ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "test -d '$FRONTEND_ROOT'"; then
             echo "::error::$FRONTEND_ROOT does not exist on the server. Match it to the root directive in /etc/nginx/sites-available/portfolio."
@@ -283,6 +291,11 @@ jobs:
           set -euo pipefail
           : "${BACKEND_DIR:?BACKEND_DIR repo variable is not set}"
           : "${VENV_DIR:?VENV_DIR repo variable is not set}"
+
+          if ! ssh -o ConnectTimeout=15 -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true; then
+            echo "::error::Cannot reach the server over SSH. If the VM was restarted its external IP may have changed - check the instance's current IP and update the SSH_HOST secret and SSH_KNOWN_HOSTS (known_hosts entries are keyed by address)."
+            exit 1
+          fi
 
           if ! ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "test -d '$BACKEND_DIR' && test -x '$VENV_DIR/bin/python'"; then
             echo "::error::BACKEND_DIR or VENV_DIR does not match the server layout."
