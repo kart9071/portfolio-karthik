@@ -10,6 +10,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
+from auth import auth_bp  # noqa: E402
 from expenses import bp as expenses_bp  # noqa: E402
 
 app = Flask(__name__)
@@ -94,6 +95,7 @@ def health():
     return jsonify({"status": "ok"})
 
 
+app.register_blueprint(auth_bp)
 app.register_blueprint(expenses_bp)
 
 # Run at import time so the table exists under gunicorn too, not just `python app.py`.

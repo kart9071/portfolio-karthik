@@ -6,13 +6,14 @@ in SQLite and in the Expenses sheet of an .xlsx laid out exactly like the one
 the desktop expense tracker writes.
 """
 
-import hmac
 import json
 import os
 import sqlite3
 from datetime import datetime, date, timedelta
 
-from flask import Blueprint, jsonify, request, send_file
+from flask import Blueprint, g, jsonify, request, send_file
+
+from auth import require_login
 
 bp = Blueprint("expenses", __name__)
 
@@ -47,25 +48,7 @@ HEADERS = ["Date", "Person", "Category", "Item / Details", "Amount",
            "Payment Mode", "Notes", "Entered On"]
 
 
-@bp.before_request
-def require_token():
-    """Gate every expense route behind a shared secret.
-
-    These endpoints expose personal finances on a public domain, so this fails
-    closed: with no EXPENSE_TOKEN configured nothing is served at all, rather
-    than defaulting to open.
-    """
-    if request.method == "OPTIONS":
-        return None  # let the CORS preflight through untouched
-
-    expected = os.environ.get("EXPENSE_TOKEN")
-    if not expected:
-        return jsonify({"error": "EXPENSE_TOKEN is not configured on the server"}), 503
-
-    # compare_digest rather than == so a wrong token cannot be guessed a
-    # character at a time by timing the response.
-    if not hmac.compare_digest(request.headers.get("X-Expense-Token", ""), expected):
-        return jsonify({"error": "unauthorized"}), 401
+bp.before_request(require_login)
 
 
 def get_db():
@@ -119,11 +102,11 @@ RESPONSE_SCHEMA = {
 }
 
 
-def _system_instruction():
+def _system_instruction(default_person):
     today = date.today()
     return (
-        "You extract expense records from a short note written by Karthik, who "
-        "tracks his own spending and his mother's.\n"
+        "You extract expense records from a short note about a household that "
+        "tracks two people's spending, Me (Karthik) and Mom.\n"
         f"Today is {today.isoformat()} ({today.strftime('%A')}). "
         f"Yesterday was {(today - timedelta(days=1)).isoformat()}. "
         "Resolve relative dates against those, and assume the current year when "
@@ -131,8 +114,9 @@ def _system_instruction():
         "When one note lists several expenses and only some carry a date, the "
         "undated ones take the last date mentioned before them, or today when "
         "the note gives no date at all.\n"
-        "'I', 'me' or an unattributed expense means Person='Me'. Mentions of "
-        "mother/mom/amma mean Person='Mom'.\n"
+        f"The note was written by {default_person}, so an expense that names no "
+        f"owner belongs to Person='{default_person}'. An explicit mention of "
+        "mother/mom/amma still means Person='Mom', and 'I' or 'me' means the writer.\n"
         "Amounts are Indian rupees; return the number only, no symbol.\n"
         "Pick the closest category from the allowed list, 'Other' if none fit. "
         "Default Payment Mode to 'UPI' when unstated.\n"
@@ -141,7 +125,7 @@ def _system_instruction():
     )
 
 
-def parse_expenses(prompt):
+def parse_expenses(prompt, default_person="Me"):
     """Ask Gemini to turn free text into expense rows. Returns a list of dicts."""
     # Imported lazily and the key read per-request, so the service still boots
     # (and CI still passes) on a host with no GEMINI_API_KEY set.
@@ -160,7 +144,7 @@ def parse_expenses(prompt):
             model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction=_system_instruction(),
+                system_instruction=_system_instruction(default_person),
                 response_mime_type="application/json",
                 response_schema=RESPONSE_SCHEMA,
                 temperature=0,
@@ -253,6 +237,47 @@ def append_to_xlsx(rows):
     os.replace(tmp, XLSX)
 
 
+def rebuild_xlsx():
+    """Rewrite the whole Expenses sheet from the database.
+
+    Used after a delete: openpyxl can remove a row, but matching a DB row to a
+    sheet row means guessing, and rewriting from the record keeps the two
+    genuinely in step. Any other sheets in the workbook are preserved.
+    """
+    import openpyxl
+
+    with get_db() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM expenses ORDER BY spent_on, id").fetchall()]
+
+    if os.path.exists(XLSX):
+        wb = openpyxl.load_workbook(XLSX)
+        if "Expenses" in wb.sheetnames:
+            del wb["Expenses"]
+        ws = wb.create_sheet("Expenses", 0)
+    else:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Expenses"
+
+    ws.append(HEADERS)
+    for r in rows:
+        ws.append([
+            datetime.strptime(r["spent_on"], "%Y-%m-%d"),
+            r["person"], r["category"], r["item"], r["amount"],
+            r["payment_mode"], r["notes"],
+            datetime.strptime(r["entered_on"], "%Y-%m-%d %H:%M:%S"),
+        ])
+    for cell in ws["A"][1:]:
+        cell.number_format = "DD-MM-YYYY"
+    for cell in ws["H"][1:]:
+        cell.number_format = "DD-MM-YYYY HH:MM:SS"
+
+    tmp = XLSX + ".tmp"
+    wb.save(tmp)
+    os.replace(tmp, XLSX)
+
+
 def insert_rows(rows, prompt):
     entered_on = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     saved = []
@@ -284,7 +309,7 @@ def add_expense():
         return jsonify({"error": "prompt is required"}), 422
 
     try:
-        raw_rows = parse_expenses(prompt)
+        raw_rows = parse_expenses(prompt, g.user["person"])
     except UpstreamError as e:
         return jsonify({"error": "Gemini rejected the request", "detail": str(e)}), 502
     except RuntimeError as e:
@@ -327,12 +352,16 @@ def list_expenses():
     date_from = (request.args.get("from") or "").strip()
     date_to = (request.args.get("to") or "").strip()
     month = (request.args.get("month") or "").strip()  # YYYY-MM
+    on_date = (request.args.get("date") or "").strip()  # YYYY-MM-DD
 
     sql = "SELECT * FROM expenses WHERE 1=1"
     params = []
     if person:
         sql += " AND person = ? COLLATE NOCASE"
         params.append(person)
+    if on_date:
+        sql += " AND spent_on = ?"
+        params.append(on_date)
     if month:
         sql += " AND substr(spent_on, 1, 7) = ?"
         params.append(month)
@@ -359,9 +388,35 @@ def list_expenses():
         "by_person": by_person,
         "by_category": by_category,
         "filters": {"person": person or None, "month": month or None,
+                    "date": on_date or None,
                     "from": date_from or None, "to": date_to or None},
         "expenses": rows,
     })
+
+
+@bp.route("/api/expenses/<int:expense_id>", methods=["DELETE"])
+def delete_expense(expense_id):
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "no expense with that id"}), 404
+        deleted = dict(row)
+        conn.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        conn.commit()
+
+    xlsx_ok, xlsx_error = True, None
+    try:
+        rebuild_xlsx()
+    except Exception as e:
+        xlsx_ok, xlsx_error = False, str(e)
+
+    print(f"[DELETED] {deleted['spent_on']} {deleted['person']} "
+          f"{deleted['category']} {deleted['amount']} by {g.user['username']}")
+
+    body = {"success": True, "deleted": deleted, "xlsx_updated": xlsx_ok}
+    if xlsx_error:
+        body["xlsx_error"] = xlsx_error
+    return jsonify(body)
 
 
 @bp.route("/api/expenses/export", methods=["GET"])
