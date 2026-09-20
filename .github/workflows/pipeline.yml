@@ -213,8 +213,16 @@ jobs:
           # Check reachability first. Otherwise a connection failure exits
           # non-zero and gets reported below as a missing directory, which sends
           # you debugging the wrong thing entirely.
-          if ! ssh -o ConnectTimeout=15 -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true; then
-            echo "::error::Cannot reach the server over SSH. If the VM was restarted its external IP may have changed - check the instance's current IP and update the SSH_HOST secret and SSH_KNOWN_HOSTS (known_hosts entries are keyed by address)."
+          # A rejected key and an unreachable host are completely different
+          # problems, so branch on which one it is rather than guessing.
+          if ! ssh_err=$(ssh -o ConnectTimeout=15 -o BatchMode=yes -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true 2>&1); then
+            if echo "$ssh_err" | grep -qi "permission denied"; then
+              echo "::error::The server refused the deploy key. On GCP the guest agent rebuilds ~/.ssh/authorized_keys from instance metadata on boot and discards keys added by hand, so add the deploy key to the instance's ssh-keys metadata to make it stick. Detail: $ssh_err"
+            elif echo "$ssh_err" | grep -qi "host key verification failed"; then
+              echo "::error::Host key mismatch. The VM was probably rebuilt - regenerate SSH_KNOWN_HOSTS from /etc/ssh/ssh_host_*_key.pub on the server. Detail: $ssh_err"
+            else
+              echo "::error::Cannot reach the server. If the VM restarted its external IP may have changed - update SSH_HOST and SSH_KNOWN_HOSTS, which are both keyed by address. Detail: $ssh_err"
+            fi
             exit 1
           fi
 
@@ -292,8 +300,16 @@ jobs:
           : "${BACKEND_DIR:?BACKEND_DIR repo variable is not set}"
           : "${VENV_DIR:?VENV_DIR repo variable is not set}"
 
-          if ! ssh -o ConnectTimeout=15 -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true; then
-            echo "::error::Cannot reach the server over SSH. If the VM was restarted its external IP may have changed - check the instance's current IP and update the SSH_HOST secret and SSH_KNOWN_HOSTS (known_hosts entries are keyed by address)."
+          # A rejected key and an unreachable host are completely different
+          # problems, so branch on which one it is rather than guessing.
+          if ! ssh_err=$(ssh -o ConnectTimeout=15 -o BatchMode=yes -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" true 2>&1); then
+            if echo "$ssh_err" | grep -qi "permission denied"; then
+              echo "::error::The server refused the deploy key. On GCP the guest agent rebuilds ~/.ssh/authorized_keys from instance metadata on boot and discards keys added by hand, so add the deploy key to the instance's ssh-keys metadata to make it stick. Detail: $ssh_err"
+            elif echo "$ssh_err" | grep -qi "host key verification failed"; then
+              echo "::error::Host key mismatch. The VM was probably rebuilt - regenerate SSH_KNOWN_HOSTS from /etc/ssh/ssh_host_*_key.pub on the server. Detail: $ssh_err"
+            else
+              echo "::error::Cannot reach the server. If the VM restarted its external IP may have changed - update SSH_HOST and SSH_KNOWN_HOSTS, which are both keyed by address. Detail: $ssh_err"
+            fi
             exit 1
           fi
 
